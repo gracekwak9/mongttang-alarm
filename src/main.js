@@ -16,7 +16,7 @@ const TYPES = {
 const qsToday = new URLSearchParams(location.search).get('today');
 const TODAY = qsToday ? new Date(qsToday + 'T00:00:00Z') : todayKST();
 
-const state = { type: null, calendar: 'solar', month: null, day: null, year: null, r: null, teaserShown: false };
+const state = { type: null, calendar: 'solar', month: null, day: null, year: null, r: null, teaserShown: false, teaserVia: null, mode: 'alarm' };
 const stack = ['home'];
 let busy = false;
 
@@ -173,12 +173,15 @@ function showResult() {
     const d = addDays(r.target, -t.offset); const past = d < TODAY;
     return `<li class="${t.key ? 'key' : ''}${past ? ' past' : ''}"><span class="chip">D-${t.offset}</span><span class="what">${t.what}</span><span class="when">${fmtShort(d)}</span></li>`;
   }).join('');
-  const label = r.alert.nextYear ? '내년 D-30에 알림 받기' : `D-${r.alert.offset}에 알림 받기`;
-  $('#openSignup').textContent = label;
-  $('#teaserCta').textContent = r.alert.nextYear ? '내년 알림 받고 오픈 소식도 받기' : `D-${r.alert.offset} 알림 받고 오픈 소식도 받기`;
-  $('#sTitle').innerHTML = (r.alert.nextYear ? '내년 D-30에 모아가' : `D-${r.alert.offset}에 모아가`) + '<br />알려드릴게요';
-  const ad = r.alert.date, yr = ad.getUTCFullYear() !== TODAY.getUTCFullYear() ? `${ad.getUTCFullYear()}년 ` : '';
-  $('#sSub').innerHTML = `<b>${yr}${fmtMD(ad)}</b>에 문자로 보내드려요`;
+  const soon = r.alert.soon;
+  $('#openSignup').textContent = soon ? '다음 기념일 준비 알림 받기' : 'D-30에 알림 받기';
+  $('#teaserCta').textContent = soon ? '다음 기념일 준비 알림 받기' : 'D-30 알림 받고 오픈 소식도 받기';
+  // 한 달도 안 남은 경우: 대안 시트 문구
+  $('#soonTitle').innerHTML = r.dday === 0 ? `오늘이 ${C.name}이에요<br />다음엔 미리 챙겨드릴게요` : `${C.name}이 한 달도<br />남지 않았어요`;
+  const others = Object.keys(TYPES).filter(k => k !== state.type).map(k => TYPES[k].name);
+  $('#pickOtherSub').textContent = `${others.join('·')}도 D-30에 알려드려요`;
+  $('#pickNextYear').textContent = `내년 ${C.name} D-30에 알림 받을게요`;
+  setSignupMode('alarm');
   $('.result .scroll').scrollTop = 0;
   go('result', { mode: stack[stack.length - 1] === 'year' ? 'dissolve' : 'push' });
 }
@@ -187,7 +190,7 @@ function onEnter(name) {
   if (name === 'result') requestAnimationFrame(syncCapture);
   if (name === 'result' && !state.teaserShown) {
     clearTimeout(teaserTimer);
-    teaserTimer = setTimeout(() => { if (isActive('result') && !openSheet) { state.teaserShown = true; sheet('teaser'); } }, 1600);
+    teaserTimer = setTimeout(() => { if (isActive('result') && !openSheet) openTeaser('timer'); }, 1600);
   }
   if (name === 'done') { const d = $('.done'); d.classList.remove('enter'); d.offsetWidth; d.classList.add('enter'); }
   if (name === 'year') setTimeout(() => yearIn.focus({ preventScroll: true }), 50);
@@ -220,9 +223,52 @@ function sheet(name) {
   openSheet = name;
   syncCapture();
 }
-$('#openSignup').addEventListener('click', () => { clearTimeout(teaserTimer); state.teaserShown = true; sheet('signup'); });
-$('#teaserCta').addEventListener('click', () => { $('#agreeMkt').checked = true; sheet('signup'); syncSignup(); });
-$('#teaserClose').addEventListener('click', () => sheet(null));
+/* 몽땅 소개 시트: 결과 진입 후 자동으로 한 번, 아직 안 봤으면 CTA 눌렀을 때 먼저 한 번 */
+function openTeaser(via) {
+  clearTimeout(teaserTimer);
+  state.teaserShown = true; state.teaserVia = via;
+  $('#teaserClose').textContent = via === 'cta' ? (state.r.alert.soon ? '건너뛸게요' : '알림만 받을게요') : '다음에 볼게요';
+  sheet('teaser');
+}
+// 알림 받기 다음 단계: 한 달 넘게 남았으면 신청 시트, 아니면 대안 시트
+function nextStep() {
+  if (state.r.alert.soon) sheet('soon');
+  else { setSignupMode('alarm'); sheet('signup'); }
+}
+$('#openSignup').addEventListener('click', () => { if (!state.teaserShown) openTeaser('cta'); else nextStep(); });
+$('#teaserCta').addEventListener('click', () => { $('#agreeMkt').checked = true; syncSignup(); nextStep(); });
+$('#teaserClose').addEventListener('click', () => { if (state.teaserVia === 'cta') nextStep(); else sheet(null); });
+
+/* 대안 시트 */
+$('#pickOther').addEventListener('click', async () => {
+  const cur = state.type;
+  sheet(null);
+  await wait(260);
+  $$('.option').forEach(o => { o.classList.remove('on'); o.disabled = o.dataset.type === cur; });
+  $('.bubble').textContent = '다른 기념일을 골라주세요!';
+  await go('who', { back: true });
+  stack.length = 0; stack.push('home', 'who');
+  relayout();
+});
+$('#pickLaunch').addEventListener('click', () => { setSignupMode('launch'); sheet('signup'); });
+$('#pickNextYear').addEventListener('click', () => { setSignupMode('alarm'); sheet('signup'); });
+
+function setSignupMode(mode) {
+  state.mode = mode;
+  const r = state.r;
+  if (mode === 'launch') {
+    $('#sTitle').innerHTML = '몽땅이 오픈하면<br />가장 먼저 알려드릴게요';
+    $('#sSub').innerHTML = '다음 생신·어버이날·결혼기념일엔<br />식당 추천부터 예약 대행까지 받아보세요';
+    $('#agreeMktLabel').textContent = '[필수] 몽땅 런칭 소식 받기';
+    $('#agreeMkt').checked = true;
+  } else {
+    $('#sTitle').innerHTML = (r.alert.nextYear ? '내년 D-30에 모아가' : 'D-30에 모아가') + '<br />알려드릴게요';
+    const ad = r.alert.date, yr = ad.getUTCFullYear() !== TODAY.getUTCFullYear() ? `${ad.getUTCFullYear()}년 ` : '';
+    $('#sSub').innerHTML = `<b>${yr}${fmtMD(ad)}</b>에 문자로 보내드려요`;
+    $('#agreeMktLabel').textContent = '[선택] 몽땅 런칭 소식 받기';
+  }
+  syncSignup();
+}
 $('#dim').addEventListener('click', () => sheet(null));
 // 시트 아래로 끌어서 닫기
 $$('.sheet').forEach(el => {
@@ -236,7 +282,7 @@ $$('.sheet').forEach(el => {
 const phone = $('#phone');
 const phoneDigits = () => phone.value.replace(/\D/g, '');
 const phoneValid = () => /^01[016789]\d{7,8}$/.test(phoneDigits());
-function syncSignup() { $('#submit').disabled = !(phoneValid() && $('#agreeReq').checked); }
+function syncSignup() { $('#submit').disabled = !(phoneValid() && $('#agreeReq').checked && (state.mode !== 'launch' || $('#agreeMkt').checked)); }
 phone.addEventListener('input', () => {
   const d = phoneDigits().slice(0, 11);
   phone.value = d.length < 4 ? d : d.length < 8 ? `${d.slice(0, 3)}-${d.slice(3)}` : `${d.slice(0, 3)}-${d.slice(3, d.length - 4)}-${d.slice(-4)}`;
@@ -245,6 +291,7 @@ phone.addEventListener('input', () => {
 });
 phone.addEventListener('blur', () => { const bad = phoneDigits().length > 0 && !phoneValid(); $('#phoneErr').hidden = !bad; $('#phoneBox').classList.toggle('error', bad); });
 $('#agreeReq').addEventListener('change', syncSignup);
+$('#agreeMkt').addEventListener('change', syncSignup);
 $('#viewPolicy').addEventListener('click', e => { e.preventDefault(); $('#policy').hidden = false; });
 $('#closePolicy').addEventListener('click', () => { $('#policy').hidden = true; });
 $('#policy').addEventListener('click', e => { if (e.target.id === 'policy') $('#policy').hidden = true; });
@@ -254,14 +301,15 @@ $('#signup').addEventListener('submit', async e => {
   const btn = $('#submit'); if (btn.disabled) return;
   btn.disabled = true; btn.classList.add('loading');
   const r = state.r;
-  const entry = { at: new Date().toISOString(), phone: phoneDigits(), type: state.type, calendar: state.calendar, month: state.month, day: state.day, year: state.year, target: iso(r.target), alert: iso(r.alert.date), marketing: $('#agreeMkt').checked };
+  const launch = state.mode === 'launch';
+  const entry = launch ? { at: new Date().toISOString(), phone: phoneDigits(), type: 'launch', marketing: true } : { at: new Date().toISOString(), phone: phoneDigits(), type: state.type, calendar: state.calendar, month: state.month, day: state.day, year: state.year, target: iso(r.target), alert: iso(r.alert.date), marketing: $('#agreeMkt').checked };
   // DB 연동 전 — 시연용으로 이 기기에만 저장
   try { const list = JSON.parse(localStorage.getItem('mongttang:alarms') || '[]'); list.push(entry); localStorage.setItem('mongttang:alarms', JSON.stringify(list)); } catch {}
   console.info('[몽땅] 알림 신청 (DB 미연동, 로컬 저장)', entry);
   await wait(700);
   btn.classList.remove('loading');
   const ad = r.alert.date, yr = ad.getUTCFullYear() !== TODAY.getUTCFullYear() ? `${ad.getUTCFullYear()}년 ` : '';
-  $('#dSub').textContent = `${yr}${fmtMD(ad)}, ${TYPES[state.type].name} D-${r.alert.offset}에\n문자로 알려드릴게요`;
+  $('#dSub').textContent = launch ? '몽땅이 오픈하면\n가장 먼저 문자로 알려드릴게요' : `${yr}${fmtMD(ad)}, ${TYPES[state.type].name} D-${r.alert.offset}에\n문자로 알려드릴게요`;
   sheet(null);
   await wait(200);
   go('done', { mode: 'dissolve' });
@@ -271,7 +319,8 @@ $('#signup').addEventListener('submit', async e => {
 $('[data-action="home"]').addEventListener('click', async () => {
   showLandingInstant();
   state.type = null; state.r = null; state.teaserShown = false;
-  $$('.option').forEach(o => o.classList.remove('on'));
+  $$('.option').forEach(o => { o.classList.remove('on'); o.disabled = false; });
+  $('.bubble').textContent = '딱 3가지만 선택하면 끝나요!';
   resetDate();
   phone.value = ''; $('#agreeReq').checked = false; $('#agreeMkt').checked = false; syncSignup();
   await go('home', { mode: 'dissolve' });
