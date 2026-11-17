@@ -40,6 +40,7 @@ async function go(name, { back = false, mode = 'push' } = {}) {
     await wait(360);
     cur.classList.remove('is-active', 'anim'); next.classList.remove('anim'); cur.style.cssText = ''; next.style.cssText = '';
   }
+  $('#app').scrollTop = 0; next.scrollTop = 0; window.scrollTo(0, 0);
   if (!back) stack.push(name); else stack.pop();
   busy = false;
   onEnter(name);
@@ -269,5 +270,35 @@ if (window.visualViewport) {
   const fit = () => { const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); document.documentElement.style.setProperty('--kb', kb + 'px'); $$('.cta-bar, .sheet').forEach(el => { el.style.bottom = kb ? kb + 'px' : ''; }); };
   vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
 }
+
+/* ───────── 모아 위치·크기: 어떤 화면 높이에서도 같은 노출 비율 유지 ─────────
+   Figma 390×844 기준 값에서 출발해, 콘텐츠 아래 남는 공간에 맞춰 크기를 조절하고
+   캐릭터가 보이는 비율(visible)을 시안과 같게 맞춰요. */
+const MOA = {
+  home: { el: '.home-moa', src: 'party', designCharH: 487.6, visible: .827, after: () => { const s = $('.home-sub'); return s.offsetTop + s.offsetHeight; }, gap: -17, minGap: -17, cx: -4.5 },
+  who: { el: '.who-moa', src: 'badge', designCharH: 264.3, visible: .797, after: () => { const o = $('.options'); return o.offsetTop + o.offsetHeight; }, gap: 166, minGap: 64, cx: 77.6, bubble: true },
+  done: { el: '.done-moa', src: 'badge', designCharH: 404.5, visible: .845, after: () => { const b = $('.done .btn-hero'); return b.offsetTop + b.offsetHeight; }, gap: 40, minGap: 28, cx: -7.5 },
+};
+const IMG = { party: { top: .259, bot: .903, l: .163, r: .792, ratio: 1100 / 1375 }, badge: { top: .093, bot: .905, l: .09, r: .881, ratio: 900 / 1189 } };
+function layoutMoa() {
+  for (const [key, c] of Object.entries(MOA)) {
+    const el = $(c.el), scr = el.closest('.screen'); const H = scr.clientHeight, W = scr.clientWidth;
+    if (!H) continue;
+    const im = IMG[c.src], contentBottom = c.after();
+    const avail = H - contentBottom - c.gap;
+    let charH = Math.min(Math.max(avail / c.visible, c.designCharH * .66), c.designCharH * 1.12);
+    let charTop = Math.max(H - c.visible * charH, contentBottom + c.minGap);
+    const imgH = charH / (im.bot - im.top), imgW = imgH * im.ratio, s = charH / c.designCharH;
+    const charCx = W / 2 + c.cx * s;
+    const left = charCx - imgW * (im.l + im.r) / 2;
+    Object.assign(el.style, { width: imgW + 'px', left: left + 'px', top: (charTop - imgH * im.top) + 'px' });
+    if (c.bubble) { const b = $('.bubble'); const bw = b.offsetWidth || 188; const bl = Math.max(16, Math.min(W - bw - 16, charCx - 223.6 * s)); Object.assign(b.style, { left: bl + 'px', top: (charTop - 26 * s) + 'px' }); }
+  }
+}
+const relayout = () => requestAnimationFrame(layoutMoa);
+addEventListener('resize', relayout); window.visualViewport?.addEventListener('resize', relayout);
+document.fonts?.ready.then(relayout);
+$$('.screen').forEach(s => new MutationObserver(relayout).observe(s, { attributes: true, attributeFilter: ['class'] }));
+layoutMoa();
 
 playIntro();

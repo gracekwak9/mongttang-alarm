@@ -59,7 +59,7 @@ button, input, select { font: inherit; color: inherit; border: 0; background: no
 button { cursor: pointer; }
 img { display: block; user-select: none; -webkit-user-drag: none; }
 [hidden] { display: none !important; }
-#app { position: relative; width: 100%; max-width: 480px; height: 100dvh; margin: 0 auto; overflow: hidden; background: var(--bg-primary); }
+#app { position: relative; width: 100%; max-width: 480px; height: 100dvh; margin: 0 auto; overflow: clip; background: var(--bg-primary); }
 
 /* icons (line, Montage stroke 2) */
 .ic { display: inline-block; width: 24px; height: 24px; background: currentColor; flex-shrink: 0; -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat; }
@@ -72,7 +72,7 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 .icon-btn.white { color: #fff; }
 
 /* ───────── screens & push transition ───────── */
-.screen { position: absolute; inset: 0; background: var(--bg-primary); visibility: hidden; transform: translateX(0); will-change: transform; }
+.screen { position: absolute; inset: 0; overflow: clip; background: var(--bg-primary); visibility: hidden; transform: translateX(0); will-change: transform; }
 .screen.is-active { visibility: visible; }
 .screen.anim { visibility: visible; transition: transform .35s var(--ease-push), opacity .3s ease-out; }
 
@@ -92,6 +92,8 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 .link.white { color: var(--white-78); }
 .cta-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 20px calc(34px + env(safe-area-inset-bottom, 0px) * .5); background: var(--bg-primary); }
 .cta-bar.gap14 { gap: 14px; }
+/* 아래에 더 있는 콘텐츠가 CTA 뒤로 자연스럽게 빠지도록 */
+.cta-bar::before { content: ""; position: absolute; left: 0; right: 0; top: -40px; height: 40px; background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff 88%); pointer-events: none; }
 
 /* ───────── ① home (intro → landing) ───────── */
 .home { overflow: hidden; }
