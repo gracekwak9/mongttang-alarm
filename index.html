@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>몽땅 · 부모님 기념일 알림</title>
+  <meta name="description" content="부모님 기념일, 까먹기 전에 알려드릴게요. 날짜만 넣으면 올해 날짜와 준비 마감일까지 정리해드려요." />
+  <meta property="og:title" content="부모님 기념일, 까먹기 전에 알려드릴게요" />
+  <meta property="og:description" content="날짜만 넣으면 올해 날짜와 준비 마감일까지 정리해드려요" />
+  <meta property="og:image" content="./img/og.jpg" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="./img/icon.png" />
+  <link rel="stylesheet" href="./fonts/WantedSansVariable.css" />
+  <link rel="preload" as="image" href="./img/moa-party.webp" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ① 인트로 → 랜딩 -->
+  <section class="screen home is-active" data-screen="home">
+    <div class="home-bg"></div>
+    <img class="home-moa" src="./img/moa-party.webp" alt="달력을 든 기니피그 모아" />
+    <div class="q-lines" aria-hidden="true">
+      <p class="t-display2 q-line">엄마 생신</p>
+      <p class="t-display2 q-line">올해는</p>
+      <p class="t-display2 q-line">며칠이더라..?</p>
+    </div>
+    <h1 class="home-headline t-display2">
+      <span>부모님 기념일</span><span>까먹기 전에</span><span>알려드릴게요</span>
+    </h1>
+    <div class="home-sub">
+      <p class="t-body1-m">날짜만 넣으면 올해 날짜와<br />준비 마감일까지 정리해드려요</p>
+      <button class="btn-hero" data-action="start"><span>30초만에 우리 집 기념일 확인하기</span></button>
+    </div>
+  </section>
+
+  <!-- ② 누구 -->
+  <section class="screen" data-screen="who">
+    <nav class="topnav"><button class="icon-btn" data-action="back" aria-label="뒤로"><i class="ic ic-back"></i></button><div class="progress"><i style="width:33.333%"></i></div></nav>
+    <h2 class="heading t-title1">누구의 기념일을<br />챙겨볼까요?</h2>
+    <div class="options">
+      <button class="option" data-type="mom"><span>엄마 생신</span><i class="ic ic-chev"></i></button>
+      <button class="option" data-type="dad"><span>아빠 생신</span><i class="ic ic-chev"></i></button>
+      <button class="option" data-type="wedding"><span>부모님 결혼기념일</span><i class="ic ic-chev"></i></button>
+    </div>
+    <img class="who-moa" src="./img/moa-badge.webp" alt="" />
+    <div class="bubble t-label1-b">딱 3가지만 선택하면 끝나요!</div>
+  </section>
+
+  <!-- ③ 날짜 -->
+  <section class="screen" data-screen="date">
+    <nav class="topnav"><button class="icon-btn" data-action="back" aria-label="뒤로"><i class="ic ic-back"></i></button><div class="progress"><i style="width:66.666%"></i></div></nav>
+    <h2 class="heading t-title1" id="dateHeading">엄마 생신은<br />언제예요?</h2>
+    <div class="form">
+      <div class="segmented" role="radiogroup" aria-label="양력/음력">
+        <button role="radio" data-cal="solar" aria-checked="true">양력</button>
+        <button role="radio" data-cal="lunar" aria-checked="false">음력</button>
+      </div>
+      <div class="row2">
+        <label class="field-box is-empty" id="monthBox"><span class="val t-title3">-</span><span class="unit t-body1-m">월</span><i class="ic ic-down"></i><select id="month" aria-label="월"></select></label>
+        <label class="field-box is-empty" id="dayBox"><span class="val t-title3">-</span><span class="unit t-body1-m">일</span><i class="ic ic-down"></i><select id="day" aria-label="일"></select></label>
+      </div>
+      <p class="msg t-label1-m" id="dateMsg" hidden><img src="./img/calendar.svg" alt="" /><span></span></p>
+    </div>
+    <div class="cta-bar"><button class="btn-xl" id="dateNext" disabled>다음</button></div>
+  </section>
+
+  <!-- ④ 태어난 해 -->
+  <section class="screen" data-screen="year">
+    <nav class="topnav"><button class="icon-btn" data-action="back" aria-label="뒤로"><i class="ic ic-back"></i></button><div class="progress"><i style="width:100%"></i></div></nav>
+    <h2 class="heading t-title1" id="yearHeading">엄마는<br />몇 년생이세요?</h2>
+    <div class="form">
+      <label class="field-box input" id="yearBox">
+        <input id="year" class="t-title3" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="예) 1960" autocomplete="off" />
+        <span class="unit t-body1-m" id="yearUnit">년생</span>
+      </label>
+      <p class="helper t-label1-m" id="yearErr" hidden></p>
+      <p class="msg t-label1-m" id="yearMsg"><img src="./img/calendar.svg" alt="" /><span>환갑·칠순 같은 특별한 해를 미리 알려드려요</span></p>
+    </div>
+    <div class="cta-bar gap14">
+      <button class="btn-xl" id="yearNext" disabled>결과 보기</button>
+      <button class="link t-label1-m" id="yearSkip">잘 모르겠어요, 건너뛸게요</button>
+    </div>
+  </section>
+
+  <!-- ⑤ 결과 + 시트 -->
+  <section class="screen result" data-screen="result">
+    <div class="scroll">
+      <header class="r-head">
+        <button class="icon-btn white" data-action="back" aria-label="뒤로"><i class="ic ic-back"></i></button>
+        <img class="r-moa" src="./img/moa-party.webp" alt="" />
+        <p class="r-label t-headline1" id="rLabel">엄마 생신까지</p>
+        <p class="r-dday" id="rDday">D-47</p>
+        <p class="r-date t-body1-m" id="rDate"></p>
+      </header>
+      <div class="r-body">
+        <div class="special" id="rSpecial">
+          <p class="t-heading1" id="rSpecialTitle"></p>
+          <p class="t-body2-m sub" id="rSpecialSub"></p>
+        </div>
+        <ul class="timeline" id="rTimeline"></ul>
+        <p class="capture t-label1-m"><img src="./img/camera.svg" alt="" />캡처해서 함께 준비할 가족에게 보내보세요</p>
+      </div>
+    </div>
+    <div class="cta-bar"><button class="btn-xl" id="openSignup">D-30에 알림 받기</button></div>
+
+    <div class="dim" id="dim"></div>
+
+    <div class="sheet teaser" id="teaser" aria-hidden="true">
+      <span class="handle"></span>
+      <img class="teaser-moa" src="./img/moa-party.webp" alt="" />
+      <div class="teaser-title">
+        <p class="t-title2">알림만 드리는 게<br />아니에요</p>
+        <p class="t-body2-m">곧 오픈하는 몽땅이 준비까지 챙겨드려요</p>
+      </div>
+      <div class="tickets">
+        <div class="ticket"><div><p class="t-headline1">식당 추천</p><p class="t-label1-m">룸·주차·메뉴까지 부모님 기준으로</p></div><img src="./img/dish.svg" alt="" /></div>
+        <div class="ticket"><div><p class="t-headline1">케이크 준비</p><p class="t-label1-m">레터링 문구부터 픽업 날짜까지</p></div><img src="./img/cake.svg" alt="" /></div>
+        <div class="ticket"><div><p class="t-headline1">예약 대행</p><p class="t-label1-m">날짜만 알려주면 예약은 몽땅이</p></div><img src="./img/calendar.svg" alt="" /></div>
+      </div>
+      <div class="teaser-actions">
+        <button class="btn-dark t-headline1" id="teaserCta">D-30 알림 받고 오픈 소식도 받기</button>
+        <button class="link white t-label1-m" id="teaserClose">다음에 볼게요</button>
+      </div>
+    </div>
+
+    <form class="sheet signup" id="signup" aria-hidden="true" novalidate>
+      <span class="handle"></span>
+      <div class="s-title">
+        <p class="t-title3" id="sTitle">D-30에 모아가<br />알려드릴게요</p>
+        <p class="t-body2-m sub" id="sSub"></p>
+      </div>
+      <div class="s-field">
+        <label class="t-label1-m tert" for="phone">휴대폰 번호</label>
+        <div class="field-box input" id="phoneBox"><input id="phone" class="t-title3" type="tel" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000" maxlength="13" /></div>
+        <p class="helper t-label1-m" id="phoneErr" hidden>휴대폰 번호를 다시 확인해주세요</p>
+      </div>
+      <div class="agrees">
+        <label class="check"><input type="checkbox" id="agreeReq" /><i></i><span class="t-body2-m">[필수] 개인정보 수집·이용 동의</span><button type="button" class="view t-label1-m" id="viewPolicy">보기</button></label>
+        <label class="check"><input type="checkbox" id="agreeMkt" /><i></i><span class="t-body2-m">[선택] 몽땅 런칭 소식 받기</span></label>
+      </div>
+      <button class="btn-xl" id="submit" type="submit" disabled><span>알림 신청하기</span></button>
+    </form>
+  </section>
+
+  <!-- ⑦ 완료 -->
+  <section class="screen done" data-screen="done">
+    <button class="icon-btn white close" data-action="home" aria-label="처음으로"><i class="ic ic-close"></i></button>
+    <h2 class="done-headline t-display2"><span>앞으로 기념일은</span><span>제가 먼저</span><span>챙길게요!</span></h2>
+    <p class="done-sub t-body1-m" id="dSub"></p>
+    <a class="btn-hero" id="insta" href="https://www.instagram.com/mongttang/" target="_blank" rel="noopener"><span>몽땅 인스타그램 구경하기</span></a>
+    <img class="done-moa" src="./img/moa-badge.webp" alt="사원증을 건 기니피그 모아" />
+  </section>
+
+  <div class="modal" id="policy" hidden>
+    <div class="modal-card">
+      <p class="t-heading2">개인정보 수집·이용 안내</p>
+      <dl class="t-label1-m">
+        <dt>수집 항목</dt><dd>휴대폰 번호, 입력한 기념일 정보</dd>
+        <dt>이용 목적</dt><dd>기념일 알림 문자 발송<br />(선택 동의 시) 몽땅 오픈 소식 안내</dd>
+        <dt>보유 기간</dt><dd>알림 발송 후 1년 또는 동의 철회 시까지</dd>
+      </dl>
+      <p class="t-label2 tert">동의하지 않을 수 있으며, 이 경우 알림 신청이 어려워요.</p>
+      <button class="btn-xl" id="closePolicy">확인</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
