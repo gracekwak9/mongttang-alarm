@@ -70,11 +70,13 @@ export function specialYear(type, baseYear, targetYear) {
   return null;
 }
 
-/** 알림 일정: D-30. 한 달도 안 남았으면(soon) 대안 제시 + 다음 해 D-30 */
+/** 알림 일정: D-30. 한 달도 안 남았으면(soon) 대안 제시: 8일 이상 남았으면 D-7, 다음 해 D-30 */
 export function alertPlan(target, today, nextTarget) {
   const dday = daysBetween(today, target);
   if (dday > 30) return { offset: 30, date: addDays(target, -30), nextYear: false, soon: false };
-  return { offset: 30, date: addDays(nextTarget, -30), nextYear: true, soon: true };
+  const next = { offset: 30, date: addDays(nextTarget, -30), nextYear: true };
+  const d7 = dday > 7 ? { offset: 7, date: addDays(target, -7), nextYear: false } : null;
+  return { ...next, soon: true, d7, next };
 }
 
 export const TIMELINE = [

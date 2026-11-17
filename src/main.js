@@ -181,7 +181,11 @@ function showResult() {
   const others = Object.keys(TYPES).filter(k => k !== state.type).map(k => TYPES[k].name);
   $('#pickOtherSub').textContent = `${others.join('·')}도 D-30에 알려드려요`;
   $('#pickNextYear').textContent = `내년 ${C.name} D-30에 알림 받을게요`;
-  setSignupMode('alarm');
+  const d7 = r.alert.d7;
+  $('#pickD7').hidden = !d7;
+  if (d7) $('#pickD7Sub').textContent = `${fmtMD(d7.date)}에 문자로 알려드려요`;
+  $('#pickD7').classList.toggle('primary', !!d7); $('#pickOther').classList.toggle('primary', !d7);
+  setSignupMode('alarm', soon ? r.alert.next : r.alert);
   $('.result .scroll').scrollTop = 0;
   go('result', { mode: stack[stack.length - 1] === 'year' ? 'dissolve' : 'push' });
 }
@@ -233,7 +237,7 @@ function openTeaser(via) {
 // 알림 받기 다음 단계: 한 달 넘게 남았으면 신청 시트, 아니면 대안 시트
 function nextStep() {
   if (state.r.alert.soon) sheet('soon');
-  else { setSignupMode('alarm'); sheet('signup'); }
+  else { setSignupMode('alarm', state.r.alert); sheet('signup'); }
 }
 $('#openSignup').addEventListener('click', () => { if (!state.teaserShown) openTeaser('cta'); else nextStep(); });
 $('#teaserCta').addEventListener('click', () => { $('#agreeMkt').checked = true; syncSignup(); nextStep(); });
@@ -251,19 +255,22 @@ $('#pickOther').addEventListener('click', async () => {
   relayout();
 });
 $('#pickLaunch').addEventListener('click', () => { setSignupMode('launch'); sheet('signup'); });
-$('#pickNextYear').addEventListener('click', () => { setSignupMode('alarm'); sheet('signup'); });
+$('#pickNextYear').addEventListener('click', () => { setSignupMode('alarm', state.r.alert.next); sheet('signup'); });
+$('#pickD7').addEventListener('click', () => { setSignupMode('alarm', state.r.alert.d7); sheet('signup'); });
 
-function setSignupMode(mode) {
+function setSignupMode(mode, plan) {
   state.mode = mode;
   const r = state.r;
+  if (plan) r.chosen = plan;
+  const a = r.chosen;
   if (mode === 'launch') {
     $('#sTitle').innerHTML = '몽땅이 오픈하면<br />가장 먼저 알려드릴게요';
     $('#sSub').innerHTML = '다음 생신·어버이날·결혼기념일엔<br />식당 추천부터 예약 대행까지 받아보세요';
     $('#agreeMktLabel').textContent = '[필수] 몽땅 런칭 소식 받기';
     $('#agreeMkt').checked = true;
   } else {
-    $('#sTitle').innerHTML = (r.alert.nextYear ? '내년 D-30에 모아가' : 'D-30에 모아가') + '<br />알려드릴게요';
-    const ad = r.alert.date, yr = ad.getUTCFullYear() !== TODAY.getUTCFullYear() ? `${ad.getUTCFullYear()}년 ` : '';
+    $('#sTitle').innerHTML = (a.nextYear ? '내년 D-30에 모아가' : `D-${a.offset}에 모아가`) + '<br />알려드릴게요';
+    const ad = a.date, yr = ad.getUTCFullYear() !== TODAY.getUTCFullYear() ? `${ad.getUTCFullYear()}년 ` : '';
     $('#sSub').innerHTML = `<b>${yr}${fmtMD(ad)}</b>에 문자로 보내드려요`;
     $('#agreeMktLabel').textContent = '[선택] 몽땅 런칭 소식 받기';
   }
@@ -302,14 +309,14 @@ $('#signup').addEventListener('submit', async e => {
   btn.disabled = true; btn.classList.add('loading');
   const r = state.r;
   const launch = state.mode === 'launch';
-  const entry = launch ? { at: new Date().toISOString(), phone: phoneDigits(), type: 'launch', marketing: true } : { at: new Date().toISOString(), phone: phoneDigits(), type: state.type, calendar: state.calendar, month: state.month, day: state.day, year: state.year, target: iso(r.target), alert: iso(r.alert.date), marketing: $('#agreeMkt').checked };
+  const entry = launch ? { at: new Date().toISOString(), phone: phoneDigits(), type: 'launch', marketing: true } : { at: new Date().toISOString(), phone: phoneDigits(), type: state.type, calendar: state.calendar, month: state.month, day: state.day, year: state.year, target: iso(r.target), alert: iso(r.chosen.date), marketing: $('#agreeMkt').checked };
   // DB 연동 전 — 시연용으로 이 기기에만 저장
   try { const list = JSON.parse(localStorage.getItem('mongttang:alarms') || '[]'); list.push(entry); localStorage.setItem('mongttang:alarms', JSON.stringify(list)); } catch {}
   console.info('[몽땅] 알림 신청 (DB 미연동, 로컬 저장)', entry);
   await wait(700);
   btn.classList.remove('loading');
-  const ad = r.alert.date, yr = ad.getUTCFullYear() !== TODAY.getUTCFullYear() ? `${ad.getUTCFullYear()}년 ` : '';
-  $('#dSub').textContent = launch ? '몽땅이 오픈하면\n가장 먼저 문자로 알려드릴게요' : `${yr}${fmtMD(ad)}, ${TYPES[state.type].name} D-${r.alert.offset}에\n문자로 알려드릴게요`;
+  const ad = r.chosen.date, yr = ad.getUTCFullYear() !== TODAY.getUTCFullYear() ? `${ad.getUTCFullYear()}년 ` : '';
+  $('#dSub').textContent = launch ? '몽땅이 오픈하면\n가장 먼저 문자로 알려드릴게요' : `${yr}${fmtMD(ad)}, ${TYPES[state.type].name} D-${r.chosen.offset}에\n문자로 알려드릴게요`;
   sheet(null);
   await wait(200);
   go('done', { mode: 'dissolve' });
