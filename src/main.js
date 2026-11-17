@@ -184,6 +184,7 @@ function showResult() {
 }
 let teaserTimer;
 function onEnter(name) {
+  if (name === 'result') requestAnimationFrame(syncCapture);
   if (name === 'result' && !state.teaserShown) {
     clearTimeout(teaserTimer);
     teaserTimer = setTimeout(() => { if (isActive('result') && !openSheet) { state.teaserShown = true; sheet('teaser'); } }, 1600);
@@ -192,6 +193,18 @@ function onEnter(name) {
   if (name === 'year') setTimeout(() => yearIn.focus({ preventScroll: true }), 50);
 }
 const isActive = n => $(`[data-screen="${n}"]`).classList.contains('is-active');
+
+/* 캡처 안내: CTA에 가려지면 CTA 위에 플로팅 배너로 */
+const capInline = $('.result .capture'), capFloat = $('#captureFloat'), rScroll = $('.result .scroll');
+function syncCapture() {
+  if (!isActive('result')) return;
+  const ctaTop = $('.result .cta-bar').getBoundingClientRect().top;
+  const hidden = capInline.getBoundingClientRect().bottom > ctaTop - 8;
+  capFloat.classList.toggle('on', hidden && !openSheet);
+  capInline.style.visibility = hidden ? 'hidden' : '';
+}
+rScroll.addEventListener('scroll', syncCapture, { passive: true });
+addEventListener('resize', () => requestAnimationFrame(syncCapture));
 
 /* sheets — Figma: 등장 0.5 ease(.2,1.08,.32,1) / 전환 0.45 ease-in-out / 닫기 0.35 */
 let openSheet = null;
@@ -205,6 +218,7 @@ function sheet(name) {
     const el = $('#' + openSheet); el.classList.add('off-fast'); el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); dim.classList.remove('on');
   }
   openSheet = name;
+  syncCapture();
 }
 $('#openSignup').addEventListener('click', () => { clearTimeout(teaserTimer); state.teaserShown = true; sheet('signup'); });
 $('#teaserCta').addEventListener('click', () => { $('#agreeMkt').checked = true; sheet('signup'); syncSignup(); });
@@ -289,10 +303,23 @@ function layoutMoa() {
     let charH = Math.min(Math.max(avail / c.visible, c.designCharH * .66), c.designCharH * 1.12);
     let charTop = Math.max(H - c.visible * charH, contentBottom + c.minGap);
     const imgH = charH / (im.bot - im.top), imgW = imgH * im.ratio, s = charH / c.designCharH;
-    const charCx = W / 2 + c.cx * s;
+    let charCx = W / 2 + c.cx * s;
+    if (c.bubble) {
+      // 말풍선은 그 자리에 두고, 겹치면 모아만 오른쪽·아래로 비켜요
+      const b = $('.bubble'); const bw = b.offsetWidth || 188, bh = b.offsetHeight || 40;
+      const bl = Math.max(16, Math.min(W - bw - 16, charCx - 223.6 * s)), bt = charTop - 26 * s;
+      Object.assign(b.style, { left: bl + 'px', top: bt + 'px' });
+      // 얼굴(가운데 약 ±24%)만 말풍선에 안 가리면 돼요. 오른쪽으로 먼저 비키고(최대 몸통 30%까지 잘림 허용), 남으면 조금만 아래로
+      const charW = imgW * (im.r - im.l), faceHalf = charW * .24, gapX = 6;
+      const overlapX = (bl + bw + gapX) - (charCx - faceHalf);
+      if (overlapX > 0) {
+        const room = Math.max(0, (W + charW * .3) - (charCx + charW / 2));
+        const dx = Math.min(overlapX, room); charCx += dx;
+        if (overlapX - dx > 0) charTop = Math.min(charTop + 24, Math.max(charTop, bt + bh + 4));
+      }
+    }
     const left = charCx - imgW * (im.l + im.r) / 2;
     Object.assign(el.style, { width: imgW + 'px', left: left + 'px', top: (charTop - imgH * im.top) + 'px' });
-    if (c.bubble) { const b = $('.bubble'); const bw = b.offsetWidth || 188; const bl = Math.max(16, Math.min(W - bw - 16, charCx - 223.6 * s)); Object.assign(b.style, { left: bl + 'px', top: (charTop - 26 * s) + 'px' }); }
   }
 }
 const relayout = () => requestAnimationFrame(layoutMoa);
